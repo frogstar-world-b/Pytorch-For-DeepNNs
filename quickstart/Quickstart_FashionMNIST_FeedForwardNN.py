@@ -36,14 +36,14 @@ activation, designed for the FashionMNIST dataset with 10 output classes.
 '''
 
 
-import matplotlib.pyplot as plt
-import os
+import time
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 
+from utils import plot_some_train_images, plot_train_test_metrics
 
 seed = 42
 torch.manual_seed(seed)
@@ -90,18 +90,7 @@ print(f'Unique class labels: {torch.unique(train_data.targets)}')
 
 
 # Plot some images in the training data
-fig, axs = plt.subplots(4, 4, figsize=(10, 10))
-plt.subplots_adjust(hspace=.5)  # adjusts vertical spacing
-for i in range(16):
-    image, label = train_data[i]
-    axs[i // 4, i % 4].imshow(image.squeeze(), cmap='gray')
-    axs[i // 4, i % 4].set_title(f'Image Label: {label}')
-fig.suptitle('FashionMNIST - First 16 Images')
-# Create the 'plots' folder if it doesn't exist
-os.makedirs('plots', exist_ok=True)
-# Save the figure to the 'plots' folder
-plt.savefig('plots/first_16_images.png')
-plt.show()
+plot_some_train_images(train_data)
 
 
 '''
@@ -165,14 +154,14 @@ print(model)
 '''
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 
 '''
 4. MODEL TRAINING AND EVALUATION
 
 - Data will be fed using in batches
-- Model feeds forward: makes predictions on the data 
+- Model feeds forward: makes predictions on the data
   and obtains prediction error
 - Model backpropegates the prediction error to adjust model parameters
 '''
@@ -219,24 +208,6 @@ def train(dataloader, model, loss_fn, optimizer):
     return(avg_train_loss, overall_accuracy)
 
 
-def evaluate(eval_dataloader, model, loss_fn, eval_type='Test'):
-    size = len(eval_dataloader.dataset)
-    num_batches = len(eval_dataloader)
-    eval_loss, eval_correct = 0, 0
-    with torch.no_grad():
-        for X, y in eval_dataloader:
-            X, y = X.to(device), y.to(device)
-            pred = model(X)
-            eval_loss += loss_fn(pred, y).item()
-            eval_correct += (pred.argmax(dim=1) ==
-                             y).type(torch.float).sum().item()
-    avg_eval_loss = eval_loss / num_batches
-    ovarall_eval_accuracy = eval_correct / size
-    print(
-        f'Avg {eval_type} Loss: {avg_eval_loss:>5f}, {eval_type} Accuracy: {ovarall_eval_accuracy:>5f}')
-
-    return(avg_eval_loss, ovarall_eval_accuracy)
-
 # The difference in handling the loss between the train and test functions is
 # because in training, the gradients need to be calculated and updated in each
 # batch, whereas in testing, only the loss and accuracy metrics are calculated
@@ -248,7 +219,29 @@ def evaluate(eval_dataloader, model, loss_fn, eval_type='Test'):
 # We print the model’s accuracy and loss at each epoch; we’d like to see the
 # accuracy increase and the loss decrease with every epoch.
 
-epochs = 50
+
+def test(test_dataloader, model, loss_fn, test_type='Test'):
+    size = len(test_dataloader.dataset)
+    num_batches = len(test_dataloader)
+    model.eval()
+    test_loss, test_correct = 0, 0
+    with torch.no_grad():
+        for X, y in test_dataloader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            test_correct += (pred.argmax(dim=1) ==
+                             y).type(torch.float).sum().item()
+    avg_test_loss = test_loss / num_batches
+    ovarall_test_accuracy = test_correct / size
+    print(
+        f'Avg {test_type} Loss: {avg_test_loss:>5f}, {test_type} Accuracy: {ovarall_test_accuracy:>5f}')
+
+    return(avg_test_loss, ovarall_test_accuracy)
+
+
+# train and evaluate
+epochs = 20
 train_losses = []
 train_accuracies = []
 test_losses = []
@@ -260,31 +253,66 @@ for t in range(epochs):
     train_losses.append(train_loss.item())
     train_accuracies.append(train_acc)
     # test
-    test_loss, test_acc = evaluate(test_dataloader, model, loss_fn)
+    test_loss, test_acc = test(test_dataloader, model, loss_fn)
     test_losses.append(test_loss)
     test_accuracies.append(test_acc)
-print('\nAll Done!!\n')
+print('\nModel training and testing are Done!!\n')
 
 
-# Plot the training and test metrics
-epochs_range = range(1, epochs + 1)
+# Plot train and test metrics
+plot_train_test_metrics(epochs, train_losses, test_losses,
+                        train_accuracies, test_accuracies,
+                        type_plot='Original')
 
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
-plt.plot(epochs_range, train_losses, label='Train Loss')
-plt.plot(epochs_range, test_losses, label='Test Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Train and Test Loss')
-plt.legend()
+'''
+5. SAVING THE MODEL
 
-plt.subplot(1, 2, 2)
-plt.plot(epochs_range, train_accuracies, label='Train Accuracy')
-plt.plot(epochs_range, test_accuracies, label='Test Accuracy')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.title('Train and Test Accuracy')
-plt.legend()
-plt.tight_layout()
-plt.savefig('plots/train_test_loss_accuracy.png')
-plt.show()
+A common way to save a model is to serialize the internal state dictionary
+(containing the model parameters).
+
+'''
+
+saved_model_name = 'original_model.pth'
+torch.save(model.state_dict(), saved_model_name)
+print(f'Saved PyTorch model state to {saved_model_name}')
+
+time.sleep(3)  # Pause for 3 seconds to give time to write to disk
+
+'''
+6. LOADING THE MODEL
+
+Loading the model involves recreating the model class structure and loading
+the state dictionary into it.
+'''
+
+loaded_model = MyNN().to(device)
+loaded_model.load_state_dict(torch.load(saved_model_name))
+
+
+'''
+7. MAKING PREDICTIONS FROM A LOADED MODEL
+'''
+
+classes = [
+    "T-shirt/top",
+    "Trouser",
+    "Pullover",
+    "Dress",
+    "Coat",
+    "Sandal",
+    "Shirt",
+    "Sneaker",
+    "Bag",
+    "Ankle boot",
+]
+
+loaded_model.eval()
+x, y = test_data[0][0], test_data[0][1]
+with torch.no_grad():
+    x = x.to(device)
+    pred = model(x)
+    pred_class = pred_class = classes[pred[0].argmax().item()]
+    actual_class = classes[y]
+
+print(f'Example prediction for the first item in the test set:')
+print(f'Actual: {actual_class}, Predicted: {pred_class}\n')

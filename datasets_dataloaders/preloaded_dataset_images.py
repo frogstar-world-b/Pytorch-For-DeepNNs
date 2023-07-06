@@ -76,6 +76,8 @@ reshuffle the data at every epoch to reduce model overfitting, and use Python's
 `multiprocessing` to speed up data retrieval.
 
 DataLoader is an iterable that abstracts this complexity in an easy API.
+See https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+- When shuffle is set to True, the data will be shuffled at every epoch!
 '''
 
 batch_size = 64

@@ -1,17 +1,9 @@
-''' Code for processing data samples can get messy and hard to maintain.
-Ideally, we want our dataset code to be decoupled from our model training
-code for better readability and modularity.
+''' Using labels data in a csv file, and corresponding images in jpg format,
+create a PyTorch Dataset.
 
-`torch.utils.data.DataLoader and torch.utils.data.Dataset are two
-fundamental data building blocks that enable using pre-loaded dataset as
-well as using your own data.
-
-- Dataset stores the samples and their corresonding labels.
-- Dataloader wraps an iterable around the Dataset to enable easy access
-  to the samples.
-
-  See a full list of pre-loaded PyTorch datasets here:
-  https://pytorch.org/vision/stable/datasets.html
+We will use read_image, which reads a JPEG or PNG image into a 3 dimensional
+RGB or grayscale Tensor. Optionally converts the image to the desired format.
+The values of the output tensor are uint8 in [0, 255].
 '''
 
 import os
@@ -23,9 +15,14 @@ from torchvision.io import read_image
 
 ''' CREATING A CUSTOM DATASET FOR YOUR FILES
 A custom Dataset class must implement three functions:
-__init__
-__len__
-__getitem__
+* __init__
+  Run once when instantiating the Dataset object. Includes items to
+  initialize the class with, e.g. directory containing images,
+  labels file, transforms
+* __len__
+  Returns the number of samples in our dataset.
+* __getitem__
+  Loads and returns a sample from the dataset at the given index idx.
 
 In the implementation below, MNIST images are stored in a directory
 img_dir, and their labels are stored seperately in a CSV file labels.csv.
@@ -37,7 +34,6 @@ tshirt1.jpg, 0
 tshirt2.jpg, 0
 ......
 ankleboot999.jpg, 9
-
 '''
 
 

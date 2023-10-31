@@ -1,6 +1,6 @@
 # Pytorch-For-DeepNN
 
-In a typical machine learning workflow, one has to deal with preprocessing data, constructing models, optimizing parameters, and storing the finalized models. This guide presents a comprehensive machine learning pipeline implemented in PyTorch, based on tutorials available on (pytorch.org)[https://pytorch.org/tutorials/beginner/basics/intro.html] -- except the examples are expanded and  executable scripts are used here.  On the plus side, they are full of docstring nuggets that dive into key motivations and considerations for each piece of code.
+In a typical machine learning workflow, one has to deal with preprocessing data, constructing models, optimizing parameters, and storing the finalized models. This guide presents a comprehensive machine learning pipeline implemented in PyTorch, based on tutorials available on [pytorch.org](https://pytorch.org/tutorials/beginner/basics/intro.html) -- except the examples are expanded and  executable scripts are used here.  On the plus side, they are full of docstring nuggets that dive into key motivations and considerations for each piece of code.
 
 Here are the topics covered,
 
